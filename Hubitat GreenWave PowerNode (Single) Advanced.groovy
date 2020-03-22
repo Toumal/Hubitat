@@ -1153,6 +1153,14 @@ private prepCommands(cmds, delay=200) {
     return response(delayBetween(cmds.collect{ (it instanceof hubitat.zwave.Command ) ? encapCommand(it).format() : it },delay))
 }
 
+private command(hubitat.zwave.Command cmd) {
+	if (state.sec) {
+		zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+	} else {
+		cmd.format()
+	}
+}
+
 /**
  *  sendCommands(cmds, delay=200)
  *
@@ -1160,7 +1168,12 @@ private prepCommands(cmds, delay=200) {
  *  Uses encapCommand() to apply security or CRC16 encapsulation as needed.
  **/
 private sendCommands(cmds, delay=200) {
-    sendHubCommand(hubitat.device.HubAction)( cmds.collect{ (it instanceof hubitat.zwave.Command ) ? response(encapCommand(it)) : response(it) }, delay)
+    def ccmds = []
+
+    cmds.each {
+        ccmds << command(it)
+    }
+	sendHubCommand(new hubitat.device.HubMultiAction(ccmds, hubitat.device.Protocol.ZWAVE))
 }
 
 /**
